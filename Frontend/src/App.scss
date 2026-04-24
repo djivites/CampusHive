@@ -1,0 +1,102 @@
+// Custom Colors (Slate & Indigo)
+$primary: #6366f1; // Indigo-500
+$success: #10b981; // Emerald-500
+$warning: #f59e0b; // Amber-500
+$danger: #ef4444; // Red-500
+$dark-bg: #020617; // Slate-950
+$card-bg: #0f172a; // Slate-900
+$text-main: #f8fafc;
+$text-muted: #94a3b8;
+
+// Bootstrap Overrides
+$body-bg: $dark-bg;
+$body-color: $text-main;
+$border-radius-lg: 1.25rem;
+$border-radius-xl: 1.75rem;
+$card-border-color: rgba(255, 255, 255, 0.05);
+
+@import "bootstrap/scss/bootstrap";
+
+// Premium Utilities
+.card-custom {
+  background: $card-bg;
+  border: 1px solid $card-border-color;
+  border-radius: $border-radius-xl;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-8px);
+    border-color: rgba($primary, 0.4);
+    box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, $primary, #4f46e5);
+  border: none;
+  padding: 0.9rem 2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 0.85rem;
+  
+  &:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: translateY(-2px);
+  }
+}
+
+.form-control {
+  background-color: #1e293b; 
+  border: 1px solid #334155;
+  color: white;
+  padding: 0.9rem 1.25rem;
+  border-radius: 0.85rem;
+  
+  &:focus {
+    background-color: #1e293b;
+    border-color: $primary;
+    box-shadow: 0 0 0 0.25rem rgba($primary, 0.25);
+    color: white;
+  }
+}
+
+.input-group {
+  .input-group-text {
+    padding-left: 1.25rem;
+    padding-right: 1rem;
+    border: 1px solid #334155;
+    border-right: none;
+    border-radius: 0.85rem 0 0 0.85rem;
+  }
+  
+  .form-control {
+    border-radius: 0 0.85rem 0.85rem 0;
+    border-left: none;
+    padding-left: 0.5rem; // Reduced since icon group provides the gap
+  }
+}
+
+.glass-morphism {
+  background: #020617; // Solid Slate-950
+  border: none !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.bg-dark-900 {
+  background-color: #0f172a;
+}
