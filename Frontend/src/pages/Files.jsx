@@ -14,7 +14,10 @@ const Files = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
-  const { register, handleSubmit, reset } = useForm();
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { register, handleSubmit, reset, setValue } = useForm();
 
   useEffect(() => {
     fetchPersonalFiles();
@@ -25,7 +28,10 @@ const Files = () => {
     try {
       const { data } = await API.get('/teams');
       setTeams(data);
-      if (data.length > 0) setActiveTeamId(data[0]._id);
+      // Only set activeTeamId if it's not already set from location state
+      if (data.length > 0 && !activeTeamId) {
+        setActiveTeamId(data[0]._id);
+      }
     } catch (error) {
       console.error('Error fetching teams:', error);
     }
@@ -47,7 +53,7 @@ const Files = () => {
   const fetchTeamResources = async (teamId) => {
     setLoading(true);
     try {
-      const { data } = await API.get(`/api/resources/team/${teamId}`);
+      const { data } = await API.get(`/resources/team/${teamId}`);
       setFiles(data.files);
       setLinks(data.links);
     } catch (error) {
@@ -65,26 +71,56 @@ const Files = () => {
     }
   }, [activeTab, activeTeamId]);
 
-  const handleFileUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSelectedFile(file);
+    setValue('customName', file.name.split('.').slice(0, -1).join('.'));
+    setShowUploadModal(true);
+  };
+
+  const handleFileUpload = async (data) => {
+    if (!selectedFile) return;
 
     const formData = new FormData();
-    formData.append('file', file);
     if (activeTab === 'team' && activeTeamId) {
       formData.append('teamId', activeTeamId);
     }
+    formData.append('file', selectedFile);
+    formData.append('customName', data.customName);
 
     setUploading(true);
     try {
       await API.post('/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      setShowUploadModal(false);
+      setSelectedFile(null);
       activeTab === 'personal' ? fetchPersonalFiles() : fetchTeamResources(activeTeamId);
     } catch (error) {
       alert('Error uploading file');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+    try {
+      await API.delete(`/files/${id}`);
+      activeTab === 'personal' ? fetchPersonalFiles() : fetchTeamResources(activeTeamId);
+    } catch (error) {
+      alert('Error deleting file');
+    }
+  };
+
+  const handleDeleteLink = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this link?')) return;
+    try {
+      await API.delete(`/resources/links/${id}`);
+      fetchTeamResources(activeTeamId);
+    } catch (error) {
+      alert('Error deleting link');
     }
   };
 
@@ -119,7 +155,18 @@ const Files = () => {
           <h2 className="fw-bold mb-1">Resource Vault</h2>
           <p className="text-muted small mb-0">Manage your documents and shared team links</p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-3 align-items-center">
+          <div className="position-relative d-none d-md-block">
+            <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={16} />
+            <input 
+              type="text" 
+              className="form-control ps-5 rounded-pill bg-dark bg-opacity-25 border-secondary border-opacity-10 text-white small py-2" 
+              placeholder="Search vault..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '250px' }}
+            />
+          </div>
           {activeTab === 'team' && (
             <button onClick={() => setShowLinkModal(true)} className="btn btn-outline-primary d-flex align-items-center gap-2 px-4 py-2 rounded-pill shadow-sm">
               <LinkIcon size={18} />
@@ -129,7 +176,7 @@ const Files = () => {
           <label className={`btn btn-primary d-flex align-items-center gap-2 px-4 py-2 rounded-pill shadow-sm cursor-pointer ${uploading ? 'disabled' : ''}`}>
             <Upload size={18} />
             <span className="fw-bold small">{uploading ? 'Uploading...' : 'Upload File'}</span>
-            <input type="file" className="d-none" onChange={handleFileUpload} disabled={uploading} />
+            <input type="file" className="d-none" onChange={handleFileSelect} disabled={uploading} />
           </label>
         </div>
       </div>
@@ -175,16 +222,19 @@ const Files = () => {
       ) : (
         <div className="row g-4">
           {/* Files List */}
-          {files.map((file) => (
+          {files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map((file) => (
             <div key={file._id} className="col-md-6 col-lg-4 col-xl-3">
               <div className="card-custom p-4 transition-all hover-translate-y h-100">
                 <div className="d-flex justify-content-between align-items-start mb-4">
                   <div className="bg-dark bg-opacity-50 p-3 rounded-4 shadow-sm">
                     {getFileIcon(file.type)}
                   </div>
-                  <button className="btn btn-link text-muted p-0"><MoreVertical size={18} /></button>
+                  <div className="d-flex gap-2">
+                    <a href={`http://localhost:5000${file.url}`} target="_blank" rel="noreferrer" className="btn btn-link text-muted p-0 hover-primary"><Download size={18} /></a>
+                    <button onClick={() => handleDeleteFile(file._id)} className="btn btn-link text-muted p-0 hover-danger"><Trash2 size={18} /></button>
+                  </div>
                 </div>
-                <h6 className="fw-bold mb-1 text-white text-truncate">{file.name}</h6>
+                <h6 className="fw-bold mb-1 text-white text-truncate" title={file.name}>{file.name}</h6>
                 <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10">
                   <span className="text-muted extra-small">{file.size}</span>
                   <span className="text-muted extra-small">{new Date(file.createdAt).toLocaleDateString()}</span>
@@ -194,14 +244,14 @@ const Files = () => {
           ))}
 
           {/* Links List (Only in Team Tab) */}
-          {activeTab === 'team' && links.map((link) => (
+          {activeTab === 'team' && links.filter(l => l.title.toLowerCase().includes(searchQuery.toLowerCase())).map((link) => (
             <div key={link._id} className="col-md-6 col-lg-4 col-xl-3">
               <div className="card-custom p-4 border-primary border-opacity-10 transition-all hover-translate-y h-100">
                 <div className="d-flex justify-content-between align-items-start mb-4">
                   <div className="bg-primary bg-opacity-10 p-3 rounded-4 shadow-sm">
                     <Globe className="text-primary" size={20} />
                   </div>
-                  <button className="btn btn-link text-muted p-0"><MoreVertical size={18} /></button>
+                  <button onClick={() => handleDeleteLink(link._id)} className="btn btn-link text-muted p-0 hover-danger"><Trash2 size={18} /></button>
                 </div>
                 <h6 className="fw-bold mb-1 text-white text-truncate">{link.title}</h6>
                 <a href={link.url} target="_blank" rel="noreferrer" className="text-primary extra-small text-decoration-none d-block text-truncate mb-3">{link.url}</a>
@@ -212,10 +262,11 @@ const Files = () => {
             </div>
           ))}
 
-          {files.length === 0 && links.length === 0 && (
+          {files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && 
+           (activeTab === 'personal' || links.filter(l => l.title.toLowerCase().includes(searchQuery.toLowerCase())).length === 0) && (
             <div className="col-12 text-center py-5 border border-dashed border-secondary border-opacity-25 rounded-4 bg-dark bg-opacity-10">
               <FolderPlus className="text-muted mb-3" size={32} />
-              <p className="text-muted">This vault is currently empty. Start adding resources for your project.</p>
+              <p className="text-muted">{searchQuery ? 'No resources match your search.' : 'This vault is currently empty. Start adding resources for your project.'}</p>
             </div>
           )}
         </div>
@@ -239,6 +290,28 @@ const Files = () => {
                 <input type="url" className="form-control" placeholder="https://github.com/..." {...register('url', { required: true })} />
               </div>
               <button type="submit" className="btn btn-primary w-100 py-3 fw-bold mt-3">Save Resource</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* File Upload Modal */}
+      {showUploadModal && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center px-3" style={{ zIndex: 2000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="card-custom p-4 p-md-5 w-100" style={{ maxWidth: '450px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h4 className="fw-bold mb-0">Upload File</h4>
+              <button onClick={() => setShowUploadModal(false)} className="btn btn-link text-muted p-0"><X size={24} /></button>
+            </div>
+            <form onSubmit={handleSubmit(handleFileUpload)}>
+              <div className="mb-4">
+                <label className="form-label text-muted small fw-bold mb-2">FILE NAME</label>
+                <input type="text" className="form-control" placeholder="Enter custom name" {...register('customName', { required: true })} />
+                <div className="text-muted extra-small mt-2">Original: {selectedFile?.name}</div>
+              </div>
+              <button type="submit" className="btn btn-primary w-100 py-3 fw-bold mt-3" disabled={uploading}>
+                {uploading ? 'Uploading...' : 'Confirm Upload'}
+              </button>
             </form>
           </div>
         </div>

@@ -11,6 +11,9 @@ const teamRoutes = require('./routes/teamRoutes');
 const vivaRoutes = require('./routes/vivaRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
+const noteRoutes = require('./routes/noteRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const userRoutes = require('./routes/userRoutes');
 const Message = require('./models/Message');
 
 // Load environment variables
@@ -58,6 +61,9 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/viva', vivaRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/notes', noteRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 // Chat history route
 app.get('/api/messages/:teamId', async (req, res) => {

@@ -9,6 +9,8 @@ import Chat from './pages/Chat';
 import Files from './pages/Files';
 import Calendar from './pages/Calendar';
 import VivaTracker from './pages/VivaTracker';
+import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 import MainLayout from './components/Layout/MainLayout';
 import API from './api/axios';
 import { 
@@ -48,23 +50,46 @@ const Dashboard = () => {
     totalTasks: 0,
     pendingTasks: 0,
     completedTasks: 0,
-    completionPercentage: 0
+    completionPercentage: 0,
+    upcomingDeadlines: [],
+    recentActivity: [],
+    chartData: [],
+    daysToViva: 0
   });
+  const [note, setNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const { data } = await API.get('/tasks/stats');
-        setStats(data);
+        const [statsRes, noteRes] = await Promise.all([
+          API.get('/tasks/stats'),
+          API.get('/notes')
+        ]);
+        setStats(statsRes.data);
+        setNote(noteRes.data.content);
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchStats();
+    fetchDashboardData();
   }, []);
+
+  const handleSaveNote = async () => {
+    setSavingNote(true);
+    try {
+      await API.post('/notes', { content: note });
+      alert('Note saved successfully!');
+    } catch (error) {
+      console.error('Error saving note:', error);
+      alert('Error saving note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   return (
     <div className="row g-4 pb-5">
@@ -100,7 +125,7 @@ const Dashboard = () => {
       <div className="col-md-3">
         <div className="card-custom p-4">
           <div className="text-muted small fw-bold mb-1 text-warning">VIVA DAYS</div>
-          <div className="h2 fw-bold mb-0">12</div>
+          <div className="h2 fw-bold mb-0">{stats.daysToViva || '0'}</div>
           <div className="text-warning small mt-2">Upcoming milestone</div>
         </div>
       </div>
@@ -116,7 +141,7 @@ const Dashboard = () => {
           </div>
           <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart data={stats.chartData.length > 0 ? stats.chartData : chartData}>
                 <defs>
                   <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -141,44 +166,32 @@ const Dashboard = () => {
         <div className="card-custom p-4 h-100">
           <h5 className="fw-bold mb-4">Upcoming Deadlines</h5>
           <div className="d-flex flex-column gap-4">
-            <div className="d-flex gap-3">
-              <div className="bg-danger bg-opacity-10 p-2 rounded-3 h-fit mt-1">
-                <Clock className="text-danger" size={18} />
-              </div>
-              <div className="flex-grow-1 border-bottom border-opacity-10 pb-3">
-                <div className="d-flex justify-content-between">
-                  <div className="fw-bold small">Project Proposal</div>
-                  <span className="badge bg-danger bg-opacity-10 text-danger rounded-pill extra-small">Tomorrow</span>
+            {stats.upcomingDeadlines.length > 0 ? stats.upcomingDeadlines.map((task, idx) => {
+              const daysLeft = Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+              const badgeClass = daysLeft <= 1 ? 'bg-danger' : daysLeft <= 3 ? 'bg-warning' : 'bg-primary';
+              const badgeText = daysLeft === 0 ? 'Today' : daysLeft === 1 ? 'Tomorrow' : `In ${daysLeft} days`;
+              
+              return (
+                <div key={task._id} className="d-flex gap-3">
+                  <div className={`${badgeClass} bg-opacity-10 p-2 rounded-3 h-fit mt-1`}>
+                    <Clock className={badgeClass.replace('bg-', 'text-')} size={18} />
+                  </div>
+                  <div className={`flex-grow-1 ${idx !== stats.upcomingDeadlines.length - 1 ? 'border-bottom border-opacity-10 pb-3' : 'pb-1'}`}>
+                    <div className="d-flex justify-content-between">
+                      <div className="fw-bold small line-clamp-1">{task.title}</div>
+                      <span className={`badge ${badgeClass} bg-opacity-10 ${badgeClass.replace('bg-', 'text-')} rounded-pill extra-small`}>
+                        {badgeText}
+                      </span>
+                    </div>
+                    <div className="text-muted extra-small mt-1">{task.team?.name || 'Personal Project'}</div>
+                  </div>
                 </div>
-                <div className="text-muted extra-small mt-1">CampusFlow Web App</div>
-              </div>
-            </div>
-            <div className="d-flex gap-3">
-              <div className="bg-warning bg-opacity-10 p-2 rounded-3 h-fit mt-1">
-                <Clock className="text-warning" size={18} />
-              </div>
-              <div className="flex-grow-1 border-bottom border-opacity-10 pb-3">
-                <div className="d-flex justify-content-between">
-                  <div className="fw-bold small">Database Schema</div>
-                  <span className="badge bg-warning bg-opacity-10 text-warning rounded-pill extra-small">In 3 days</span>
-                </div>
-                <div className="text-muted extra-small mt-1">Backend API Development</div>
-              </div>
-            </div>
-            <div className="d-flex gap-3">
-              <div className="bg-primary bg-opacity-10 p-2 rounded-3 h-fit mt-1">
-                <Clock className="text-primary" size={18} />
-              </div>
-              <div className="flex-grow-1 pb-1">
-                <div className="d-flex justify-content-between">
-                  <div className="fw-bold small">UI Mockups</div>
-                  <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill extra-small">Next Week</span>
-                </div>
-                <div className="text-muted extra-small mt-1">Frontend UI Design</div>
-              </div>
-            </div>
+              );
+            }) : (
+              <p className="text-muted small">No upcoming deadlines.</p>
+            )}
           </div>
-          <button className="btn btn-link text-primary p-0 mt-3 text-decoration-none small fw-bold">View all deadlines →</button>
+          <button className="btn btn-link text-primary p-0 mt-3 text-decoration-none small fw-bold" onClick={() => navigate('/tasks')}>View all tasks →</button>
         </div>
       </div>
 
@@ -186,24 +199,23 @@ const Dashboard = () => {
       <div className="col-md-6 mt-4">
         <div className="card-custom p-4 h-100">
           <h5 className="fw-bold mb-4">Recent Activity</h5>
-          <div className="d-flex gap-3 mb-4">
-            <div className="bg-success bg-opacity-10 p-2 rounded-circle h-fit shadow-sm">
-              <CheckSquare className="text-success" size={16} />
+          {stats.recentActivity.length > 0 ? stats.recentActivity.map((task, idx) => (
+            <div key={task._id} className="d-flex gap-3 mb-4 last-no-mb">
+              <div className={`bg-${task.status === 'Completed' ? 'success' : 'primary'} bg-opacity-10 p-2 rounded-circle h-fit shadow-sm`}>
+                {task.status === 'Completed' ? <CheckSquare className="text-success" size={16} /> : <Clock className="text-primary" size={16} />}
+              </div>
+              <div className={`${idx !== stats.recentActivity.length - 1 ? 'border-bottom border-opacity-10 pb-3' : ''} w-100`}>
+                <p className="small mb-0 text-white">
+                  <strong>You</strong> {task.status === 'Completed' ? 'completed' : 'updated'} the task <u>{task.title}</u>
+                </p>
+                <span className="text-muted extra-small" style={{ fontSize: '11px' }}>
+                  {new Date(task.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(task.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
             </div>
-            <div className="border-bottom border-opacity-10 pb-3 w-100">
-              <p className="small mb-0 text-white"><strong>You</strong> completed the task <u>Setup Auth API</u></p>
-              <span className="text-muted extra-small" style={{ fontSize: '11px' }}>2 hours ago</span>
-            </div>
-          </div>
-          <div className="d-flex gap-3">
-            <div className="bg-primary bg-opacity-10 p-2 rounded-circle h-fit shadow-sm">
-              <MessageSquare className="text-primary" size={16} />
-            </div>
-            <div className="w-100">
-              <p className="small mb-0 text-white"><strong>Rahul</strong> commented on <u>Database Design</u></p>
-              <span className="text-muted extra-small" style={{ fontSize: '11px' }}>Yesterday at 4:30 PM</span>
-            </div>
-          </div>
+          )) : (
+            <p className="text-muted small">No recent activity.</p>
+          )}
         </div>
       </div>
       
@@ -215,9 +227,17 @@ const Dashboard = () => {
             placeholder="Type a quick note here..." 
             rows="5"
             style={{ resize: 'none', fontSize: '14px' }}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
           ></textarea>
           <div className="d-flex justify-content-end mt-3 pt-2">
-            <button className="btn btn-primary btn-sm rounded-pill px-4 py-2">Save Note</button>
+            <button 
+              onClick={handleSaveNote}
+              disabled={savingNote}
+              className="btn btn-primary btn-sm rounded-pill px-4 py-2"
+            >
+              {savingNote ? 'Saving...' : 'Save Note'}
+            </button>
           </div>
         </div>
       </div>
@@ -262,8 +282,8 @@ function App() {
         <Route path="/files" element={<ProtectedRoute><Files /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
         <Route path="/viva" element={<ProtectedRoute><VivaTracker /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><div className="h2 fw-bold">Analytics</div></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><div className="h2 fw-bold">Settings</div></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
     </div>
   );

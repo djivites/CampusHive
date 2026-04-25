@@ -35,4 +35,21 @@ router.get('/team/:teamId', protect, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/resources/links/:id
+router.delete('/links/:id', protect, async (req, res) => {
+  try {
+    const link = await Link.findById(req.params.id);
+    if (!link) return res.status(404).json({ message: 'Link not found' });
+
+    if (link.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    await Link.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Link removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

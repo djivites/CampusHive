@@ -6,6 +6,17 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   avatar: { type: String, default: "" },
+  bio: { type: String, default: "" },
+  settings: {
+    emailNotifications: { type: Boolean, default: true },
+    pushNotifications: { type: Boolean, default: true },
+    taskReminders: { type: Boolean, default: true },
+    teamActivity: { type: Boolean, default: false },
+    allowFileUploads: { type: Boolean, default: true },
+    taskCreation: { type: Boolean, default: true },
+    inviteMembers: { type: Boolean, default: false },
+    theme: { type: String, default: 'dark' }
+  }
 }, { timestamps: true });
 
 // Hash password before saving
