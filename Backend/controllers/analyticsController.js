@@ -74,7 +74,14 @@ exports.getAnalytics = async (req, res) => {
     const currentVelocity = sprintVelocity[sprintVelocity.length - 1].velocity;
 
     // 6. Avg. Task Time (Simplified)
-...
+    const completedTasks = await Task.find({ assignedTo: userId, status: 'Completed' });
+    let totalTime = 0;
+    completedTasks.forEach(task => {
+      totalTime += (new Date(task.updatedAt) - new Date(task.createdAt)) / (1000 * 60 * 60); // in hours
+    });
+    const avgTaskTime = completedTasks.length ? Math.round(totalTime / completedTasks.length) : 0;
+
+    const activeMembersCount = userTeams.reduce((count, team) => count + team.members.length, 0);
     res.json({
       completionRate,
       teamVelocity: currentVelocity,
