@@ -39,7 +39,7 @@ const Register = () => {
           <div className="row">
             <div className="col-12 mb-4">
               <label className="form-label text-muted small fw-bold mb-2">FULL NAME</label>
-              <div className="input-group">
+              <div className="input-group has-validation">
                 <span className="input-group-text bg-transparent border-end-0 text-muted">
                   <User size={18} />
                 </span>
@@ -56,7 +56,7 @@ const Register = () => {
 
           <div className="mb-4">
             <label className="form-label text-muted small fw-bold mb-2">UNIVERSITY EMAIL</label>
-            <div className="input-group">
+            <div className="input-group has-validation">
               <span className="input-group-text bg-transparent border-end-0 text-muted">
                 <Mail size={18} />
               </span>
@@ -73,7 +73,7 @@ const Register = () => {
 
           <div className="mb-5">
             <label className="form-label text-muted small fw-bold mb-2">PASSWORD</label>
-            <div className="input-group">
+            <div className="input-group has-validation">
               <span className="input-group-text bg-transparent border-end-0 text-muted">
                 <Lock size={18} />
               </span>

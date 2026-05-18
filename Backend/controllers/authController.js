@@ -23,6 +23,8 @@ exports.registerUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar || "",
+        settings: user.settings,
         token: generateToken(user._id),
       });
     } else {
@@ -46,6 +48,8 @@ exports.loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar || "",
+        settings: user.settings,
         token: generateToken(user._id),
       });
     } else {
@@ -66,8 +70,52 @@ exports.getUserProfile = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar || "",
+      settings: user.settings,
     });
   } else {
     res.status(404).json({ message: 'User not found' });
+  }
+};
+
+// @desc    Google Login user
+// @route   POST /api/auth/google
+exports.googleLogin = async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // Verify token with Google API (alternative to google-auth-library)
+    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+    const ticket = await googleRes.json();
+
+    if (ticket.error) {
+      return res.status(401).json({ message: 'Invalid Google token' });
+    }
+
+    const { email, name, picture } = ticket;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user with random password
+      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      user = await User.create({ 
+        name, 
+        email, 
+        password: randomPassword,
+        avatar: picture || ""
+      });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      settings: user.settings,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

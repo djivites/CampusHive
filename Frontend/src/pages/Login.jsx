@@ -1,13 +1,35 @@
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const [error, setError] = useState('');
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const googleButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: "44299924980-la4b0rt901goku6b9j8dtmpsc06jj6kd.apps.googleusercontent.com",
+        callback: handleGoogleResponse
+      });
+      window.google.accounts.id.renderButton(
+        googleButtonRef.current,
+        { theme: "outline", size: "large", width: "100%", text: "continue_with" }
+      );
+    }
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    setError('');
+    const result = await googleLogin(response.credential);
+    if (!result.success) {
+      setError(result.message);
+    }
+  };
 
   const onSubmit = async (data) => {
     setError('');
@@ -38,7 +60,7 @@ const Login = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <label className="form-label text-muted small fw-bold mb-2">EMAIL ADDRESS</label>
-            <div className="input-group">
+            <div className="input-group has-validation">
               <span className="input-group-text bg-transparent border-end-0 text-muted">
                 <Mail size={18} />
               </span>
@@ -57,7 +79,7 @@ const Login = () => {
               <label className="form-label text-muted small fw-bold">PASSWORD</label>
               <a href="#" className="text-primary small text-decoration-none fw-semibold">Forgot?</a>
             </div>
-            <div className="input-group">
+            <div className="input-group has-validation">
               <span className="input-group-text bg-transparent border-end-0 text-muted">
                 <Lock size={18} />
               </span>
@@ -75,10 +97,9 @@ const Login = () => {
             Sign In
           </button>
           
-          <button type="button" className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 mb-5 py-2">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google" />
-            Continue with Google
-          </button>
+          <div className="mb-5" style={{ display: 'flex', justifyContent: 'center' }}>
+            <div ref={googleButtonRef} style={{ width: '100%' }}></div>
+          </div>
         </form>
 
         <p className="text-center text-muted small mb-0">

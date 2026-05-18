@@ -12,7 +12,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      
+      // Self-heal: Fetch full up-to-date user settings and profile in background
+      API.get('/users/profile')
+        .then(({ data }) => {
+          const mergedUser = { ...parsedUser, ...data };
+          setUser(mergedUser);
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+        })
+        .catch((err) => {
+          console.error('Self-heal profile sync failed:', err);
+        });
     }
     setLoading(false);
   }, []);
@@ -56,8 +68,30 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
+  const updateUser = (updatedUserData) => {
+    const newUserState = { ...user, ...updatedUserData };
+    setUser(newUserState);
+    localStorage.setItem('user', JSON.stringify(newUserState));
+  };
+
+  const googleLogin = async (credential) => {
+    try {
+      const { data } = await API.post('/auth/google', { token: credential });
+      setUser(data);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data));
+      navigate('/dashboard');
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Google Login failed',
+      };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, register, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

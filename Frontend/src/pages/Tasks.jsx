@@ -39,9 +39,8 @@ const Tasks = () => {
 
   const updateStatus = async (id, newStatus) => {
     try {
-      // For now, we'll just implement a simple status update API later or use this logic
-      // In a real app, you'd have a PUT /tasks/:id route
-      console.log('Update status to:', newStatus);
+      await API.put(`/tasks/${id}/status`, { status: newStatus });
+      fetchTasks();
     } catch (error) {
       console.error('Error updating task:', error);
     }

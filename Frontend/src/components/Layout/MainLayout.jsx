@@ -3,7 +3,7 @@ import Navbar from './Navbar';
 
 const MainLayout = ({ children }) => {
   return (
-    <div className="d-flex min-vh-100" style={{ backgroundColor: '#020617', color: 'white' }}>
+    <div className="d-flex min-vh-100">
       <Sidebar />
       <div className="flex-grow-1 d-flex flex-column" style={{ marginLeft: '280px' }}>
         <Navbar />

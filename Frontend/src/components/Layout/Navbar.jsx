@@ -1,11 +1,13 @@
 import { Search, Bell, User, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
-    <nav className="navbar navbar-expand-lg glass-morphism sticky-top py-3 px-4" style={{ marginLeft: '280px', zIndex: 900 }}>
+    <nav className="navbar navbar-expand-lg glass-morphism sticky-top py-3 px-4" style={{ zIndex: 900 }}>
       <div className="container-fluid p-0">
         <div className="d-flex align-items-center bg-dark bg-opacity-50 rounded-pill px-4 py-2 border w-50" style={{ maxWidth: '400px' }}>
           <Search className="text-muted me-2" size={18} />
@@ -27,13 +29,25 @@ const Navbar = () => {
           
           <div className="vr mx-2 opacity-10" style={{ height: '24px' }}></div>
 
-          <div className="d-flex align-items-center gap-3 cursor-pointer">
+          <div 
+            onClick={() => navigate('/settings')}
+            className="d-flex align-items-center gap-3 cursor-pointer"
+          >
             <div className="text-end d-none d-md-block">
               <div className="fw-bold text-white small mb-0">{user?.name}</div>
               <div className="text-muted extra-small" style={{ fontSize: '11px' }}>Available</div>
             </div>
-            <div className="bg-primary rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style={{ width: '42px', height: '42px' }}>
-              {user?.name?.[0]?.toUpperCase() || 'U'}
+            <div 
+              className="bg-primary rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm overflow-hidden" 
+              style={{ 
+                width: '42px', 
+                height: '42px',
+                backgroundImage: user?.avatar ? `url("${user.avatar}")` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              {!user?.avatar && (user?.name?.[0]?.toUpperCase() || 'U')}
             </div>
           </div>
         </div>

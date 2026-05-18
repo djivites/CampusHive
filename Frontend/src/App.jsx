@@ -261,8 +261,15 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const theme = user?.settings?.theme || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [user]);
+
   return (
-    <div className="app-container min-vh-100" style={{ backgroundColor: '#020617' }}>
+    <div className="app-container min-vh-100">
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

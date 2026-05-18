@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   User, Bell, Shield, Palette, Trash2, 
-  Moon, Sun, Check, Mail, Camera 
+  Moon, Sun, Check, Mail, Camera, Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/axios';
 
 const Settings = () => {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState({
     name: '',
     email: '',
-    bio: ''
+    bio: '',
+    avatar: ''
   });
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -25,6 +26,7 @@ const Settings = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchUserData();
@@ -36,7 +38,8 @@ const Settings = () => {
       setProfile({
         name: data.name,
         email: data.email,
-        bio: data.bio || ''
+        bio: data.bio || '',
+        avatar: data.avatar || ''
       });
       if (data.settings) {
         setSettings(data.settings);
@@ -53,6 +56,7 @@ const Settings = () => {
     setSaving(true);
     try {
       await API.put('/users/profile', profile);
+      updateUser(profile);
       alert('Profile updated successfully!');
     } catch (error) {
       alert('Error updating profile');
@@ -61,11 +65,44 @@ const Settings = () => {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    setSaving(true);
+    try {
+      const { data } = await API.post('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const newAvatarUrl = `http://localhost:5000${data.url}`;
+      
+      await API.put('/users/profile', { ...profile, avatar: newAvatarUrl });
+      setProfile({ ...profile, avatar: newAvatarUrl });
+      updateUser({ avatar: newAvatarUrl });
+      alert('Avatar updated successfully!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Error updating avatar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSettingToggle = async (key) => {
-    const newVal = !settings[key];
-    setSettings({ ...settings, [key]: newVal });
+    let newVal;
+    if (key === 'theme') {
+      newVal = settings.theme === 'dark' ? 'light' : 'dark';
+    } else {
+      newVal = !settings[key];
+    }
+    const newSettings = { ...settings, [key]: newVal };
+    setSettings(newSettings);
     try {
       await API.put('/users/settings', { [key]: newVal });
+      updateUser({ settings: newSettings });
     } catch (error) {
       console.error('Error updating settings:', error);
     }
@@ -101,14 +138,33 @@ const Settings = () => {
 
           <div className="d-flex align-items-center gap-4 mb-5">
             <div className="position-relative">
-              <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-lg" style={{ width: '100px', height: '100px', fontSize: '32px' }}>
-                {profile.name[0]}
+              <div 
+                className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-lg overflow-hidden" 
+                style={{ width: '100px', height: '100px', fontSize: '32px', backgroundImage: profile.avatar ? `url("${profile.avatar}")` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
+                {!profile.avatar && (profile.name ? profile.name[0].toUpperCase() : 'U')}
               </div>
-              <button className="btn btn-dark btn-sm rounded-circle position-absolute bottom-0 end-0 p-2 border border-secondary border-opacity-25 shadow">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-dark btn-sm rounded-circle position-absolute bottom-0 end-0 p-2 border border-secondary border-opacity-25 shadow"
+              >
                 <Camera size={16} />
               </button>
             </div>
-            <button className="btn btn-primary rounded-pill px-4 fw-bold small">Change Avatar</button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="btn btn-primary rounded-pill px-4 fw-bold small"
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="animate-spin" size={16} /> : 'Change Avatar'}
+            </button>
+            <input 
+              type="file" 
+              className="d-none" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              onChange={handleAvatarUpload} 
+            />
           </div>
 
           <form onSubmit={handleProfileUpdate}>
@@ -243,7 +299,7 @@ const Settings = () => {
           <div className="row g-4">
             <div className="col-md-6">
               <div 
-                onClick={() => handleSettingToggle('theme')}
+                onClick={() => settings.theme !== 'dark' && handleSettingToggle('theme')}
                 className={`p-4 rounded-4 cursor-pointer border-2 transition-all d-flex flex-column align-items-center gap-3 ${settings.theme === 'dark' ? 'bg-primary bg-opacity-10 border-primary shadow-lg' : 'bg-dark bg-opacity-25 border-transparent opacity-50'}`}
               >
                 <div className="bg-dark p-4 rounded-3 border border-secondary border-opacity-25 w-100 text-center">
@@ -254,10 +310,11 @@ const Settings = () => {
             </div>
             <div className="col-md-6">
               <div 
-                className={`p-4 rounded-4 cursor-not-allowed border-2 transition-all d-flex flex-column align-items-center gap-3 opacity-25`}
+                onClick={() => settings.theme !== 'light' && handleSettingToggle('theme')}
+                className={`p-4 rounded-4 cursor-pointer border-2 transition-all d-flex flex-column align-items-center gap-3 ${settings.theme === 'light' ? 'bg-primary bg-opacity-10 border-primary shadow-lg' : 'bg-dark bg-opacity-25 border-transparent opacity-50'}`}
               >
                 <div className="bg-white p-4 rounded-3 border border-secondary border-opacity-25 w-100 text-center">
-                  <Sun size={32} className="text-dark" />
+                  <Sun size={32} className="text-primary" />
                 </div>
                 <h6 className="fw-bold mb-0 text-white small">Light Mode</h6>
               </div>

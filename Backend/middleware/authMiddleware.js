@@ -17,6 +17,11 @@ const protect = async (req, res, next) => {
 
       // Get user from the token
       req.user = await User.findById(decoded.id).select('-password');
+      
+      if (!req.user) {
+        res.status(401).json({ message: 'Not authorized, user deleted' });
+        return;
+      }
 
       next();
     } catch (error) {

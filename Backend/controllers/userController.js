@@ -19,7 +19,8 @@ exports.updateUserProfile = async (req, res) => {
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-    user.bio = req.body.bio || user.bio;
+    if (req.body.bio !== undefined) user.bio = req.body.bio;
+    if (req.body.avatar !== undefined) user.avatar = req.body.avatar;
     if (req.body.password) {
       user.password = req.body.password;
     }
@@ -30,6 +31,7 @@ exports.updateUserProfile = async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       bio: updatedUser.bio,
+      avatar: updatedUser.avatar,
       settings: updatedUser.settings
     });
   } else {
@@ -43,7 +45,7 @@ exports.updateUserSettings = async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    user.settings = { ...user.settings, ...req.body };
+    Object.assign(user.settings, req.body);
     const updatedUser = await user.save();
     res.json(updatedUser.settings);
   } else {
