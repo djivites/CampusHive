@@ -8,7 +8,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         api: 'modern-compiler',
-        silenceDeprecations: ['import', 'color-functions', 'global-builtin', 'mixed-decls', 'legacy-js-api'],
+        silenceDeprecations: ['import', 'color-functions', 'global-builtin', 'legacy-js-api', 'if-function'],
       },
     },
   },

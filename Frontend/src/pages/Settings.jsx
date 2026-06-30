@@ -323,7 +323,7 @@ const Settings = () => {
         </div>
 
         {/* Danger Zone */}
-        <div className="card-custom p-4 p-md-5 border-danger border-opacity-10 bg-danger bg-opacity-5">
+        <div className="card-custom p-4 p-md-5 border-danger border-opacity-10 bg-danger bg-opacity-10">
           <div className="d-flex align-items-center gap-3 mb-4">
             <Trash2 className="text-danger" size={24} />
             <h5 className="fw-bold mb-0 text-danger">Danger Zone</h5>

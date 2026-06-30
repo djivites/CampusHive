@@ -38,11 +38,18 @@ const Teams = () => {
     }
   }, [selectedTeam, activeTab]);
 
-  const fetchTeams = async () => {
+  const fetchTeams = async (targetTeamId = null) => {
     try {
       const { data } = await API.get('/teams');
       setTeams(data);
-      if (data.length > 0 && !selectedTeam) setSelectedTeam(data[0]);
+      if (data.length > 0) {
+        // Sync currently selected team or fallback to first team
+        const activeId = targetTeamId || selectedTeam?._id;
+        const updatedSelected = data.find(t => t._id === activeId);
+        setSelectedTeam(updatedSelected || data[0]);
+      } else {
+        setSelectedTeam(null);
+      }
     } catch (error) {
       console.error('Error fetching teams:', error);
     } finally {
@@ -64,8 +71,8 @@ const Teams = () => {
       const { data: newTeam } = await API.post('/teams', { ...data, mode: teamMode });
       setShowCreateModal(false);
       resetCreate();
-      fetchTeams();
-      setSelectedTeam(newTeam);
+      // fetchTeams and directly select the new team
+      await fetchTeams(newTeam._id);
     } catch (error) {
       alert('Error creating team');
     }
@@ -96,10 +103,11 @@ const Teams = () => {
 
   const onInviteMember = async (data) => {
     try {
-      await API.post(`/teams/${selectedTeam._id}/members`, data);
+      const { data: updatedTeam } = await API.post(`/teams/${selectedTeam._id}/members`, data);
       setShowInviteModal(false);
       resetInvite();
-      fetchTeams();
+      // Sync list and keep the current team selected with updated members
+      await fetchTeams(updatedTeam._id);
     } catch (error) {
       alert(error.response?.data?.message || 'Error inviting member');
     }
@@ -108,7 +116,8 @@ const Teams = () => {
   const canCreateTask = () => {
     if (!selectedTeam) return false;
     if (selectedTeam.mode === 'Normal') return true;
-    return selectedTeam.lead._id === user._id;
+    const leadId = selectedTeam.lead?._id || selectedTeam.lead;
+    return leadId === user?._id;
   };
 
   if (loading) return <div className="text-center py-5 text-muted">Loading Workspace...</div>;
@@ -144,7 +153,7 @@ const Teams = () => {
                   <h6 className="fw-bold mb-0 text-white text-truncate">{team.name}</h6>
                   <span className="text-muted extra-small">{team.members.length} members • {team.mode || 'Leader'}</span>
                 </div>
-                {team.mode === 'Leader' && team.lead._id === user._id && <Crown size={12} className="text-warning" />}
+                {team.mode === 'Leader' && (team.lead?._id || team.lead) === user?._id && <Crown size={12} className="text-warning" />}
               </div>
             </div>
           ))}
@@ -166,7 +175,7 @@ const Teams = () => {
                   </div>
                   <div className="d-flex gap-2">
                     <button onClick={() => setShowInviteModal(true)} className="btn btn-outline-primary rounded-pill px-4 py-2 small fw-bold">Invite Member</button>
-                    {selectedTeam.lead._id === user._id && <button onClick={onDeleteTeam} className="btn btn-outline-danger rounded-pill px-4 py-2 small fw-bold"><Trash2 size={14} /></button>}
+                    {(selectedTeam.lead?._id || selectedTeam.lead) === user?._id && <button onClick={onDeleteTeam} className="btn btn-outline-danger rounded-pill px-4 py-2 small fw-bold"><Trash2 size={14} /></button>}
                   </div>
                 </div>
                 <div className="d-flex gap-4 mt-5">
@@ -182,18 +191,25 @@ const Teams = () => {
                   <>
                     <h5 className="fw-bold mb-4 text-white">Team Members</h5>
                     <div className="d-flex flex-column gap-2 mb-5">
-                      {selectedTeam.members.map((member) => (
-                        <div key={member._id} className="d-flex align-items-center justify-content-between p-3 bg-dark bg-opacity-25 rounded-4 border border-secondary border-opacity-10">
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style={{ width: '36px', height: '36px' }}>{member.name[0]}</div>
-                            <div>
-                              <div className="fw-bold text-white small">{member.name}</div>
-                              <div className="text-muted extra-small">{selectedTeam.lead._id === member._id ? 'Team Leader' : 'Developer'}</div>
+                      {selectedTeam.members && selectedTeam.members.map((member) => {
+                        const isPopulated = member && typeof member === 'object';
+                        const memberId = isPopulated ? member._id : member;
+                        const memberName = isPopulated ? member.name : 'Unknown Member';
+                        const memberEmail = isPopulated ? member.email : '';
+                        const leadId = selectedTeam.lead?._id || selectedTeam.lead;
+                        return (
+                          <div key={memberId} className="d-flex align-items-center justify-content-between p-3 bg-dark bg-opacity-25 rounded-4 border border-secondary border-opacity-10">
+                            <div className="d-flex align-items-center gap-3">
+                              <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style={{ width: '36px', height: '36px' }}>{memberName[0] || '?'}</div>
+                              <div>
+                                <div className="fw-bold text-white small">{memberName}</div>
+                                <div className="text-muted extra-small">{leadId === memberId ? 'Team Leader' : 'Developer'}</div>
+                              </div>
                             </div>
+                            <div className="text-muted small">{memberEmail}</div>
                           </div>
-                          <div className="text-muted small">{member.email}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -259,7 +275,12 @@ const Teams = () => {
                 <label className="form-label text-muted small fw-bold mb-1">ASSIGN TO MEMBER</label>
                 <select className="form-select" {...registerTask('assignedTo', { required: true })}>
                   <option value="">Select Member</option>
-                  {selectedTeam.members.map(m => <option key={m._id} value={m._id}>{m.name} {m._id === user._id ? '(You)' : ''}</option>)}
+                  {selectedTeam.members && selectedTeam.members.map(m => {
+                    const isPopulated = m && typeof m === 'object';
+                    const mId = isPopulated ? m._id : m;
+                    const mName = isPopulated ? m.name : 'Unknown Member';
+                    return <option key={mId} value={mId}>{mName} {mId === user?._id ? '(You)' : ''}</option>;
+                  })}
                 </select>
               </div>
               <button type="submit" className="btn btn-primary w-100 py-3 fw-bold shadow-lg">Assign Task</button>
