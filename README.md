@@ -1,10 +1,16 @@
 # 🎓 CampusFlow
 
-**CampusFlow** is a comprehensive student project management ecosystem designed to streamline collaboration, task tracking, and resource management for academic teams. Built with a modern dark-themed UI and a robust real-time backend, it provides everything a student team needs to succeed from proposal to final Viva.
+**CampusFlow** is a comprehensive student project management ecosystem designed to streamline collaboration, task tracking, and resource management for academic teams. Built with a modern dark-themed UI and a robust real-time backend, it provides everything a student team needs to succeed from proposal to final Viva.,,
 
 ---
 
 ## 🚀 Key Features
+
+### 🔐 Secure Authentication & Verification
+*   **Email OTP Verification**: Confirms that user email addresses exist and belong to them by requiring a 6-digit One-Time Password (OTP) on signup.
+*   **Auto-Expiring Codes**: OTPs are secured via MongoDB TTL indexes and automatically delete themselves after 5 minutes.
+*   **Strong Password Restrictions**: Enforces a minimum password length of 8 characters, containing at least one uppercase letter, one lowercase letter, one number, and one special character.
+*   **Mock Fallback Mode**: If SMTP is not configured during development, verification codes are logged directly to the backend command line terminal.
 
 ### 📊 Dynamic Dashboard
 *   **Real-time Stats**: Track total, pending, and completed tasks at a glance.
@@ -75,6 +81,14 @@ Create a `.env` file in the `Backend` directory:
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
+
+# Email SMTP Configuration (optional, logs OTP to terminal if left blank)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-google-app-password
+SMTP_SECURE=false
+SMTP_FROM="CampusFlow" <your-email@gmail.com>
 ```
 Start the server:
 ```bash

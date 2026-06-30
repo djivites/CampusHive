@@ -14,7 +14,12 @@ exports.createTeam = async (req, res) => {
       lead: req.user._id,
       members: [req.user._id]
     });
-    res.status(201).json(team);
+    
+    const populatedTeam = await Team.findById(team._id)
+      .populate('members', 'name email avatar')
+      .populate('lead', 'name email');
+
+    res.status(201).json(populatedTeam);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -77,7 +82,11 @@ exports.addMember = async (req, res) => {
     team.members.push(userToAdd._id);
     await team.save();
 
-    res.json(team);
+    const populatedTeam = await Team.findById(team._id)
+      .populate('members', 'name email avatar')
+      .populate('lead', 'name email');
+
+    res.json(populatedTeam);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
