@@ -15,7 +15,8 @@ const Chat = () => {
 
   // Initialize socket
   useEffect(() => {
-    socket.current = io('http://localhost:5000'); // Replace with your backend URL
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    socket.current = io(socketUrl);
     
     socket.current.on('receive_message', (message) => {
       setMessages((prev) => [...prev, message]);
