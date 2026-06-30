@@ -14,7 +14,7 @@ import Settings from './pages/Settings';
 import MainLayout from './components/Layout/MainLayout';
 import API from './api/axios';
 import { 
-  CheckSquare, MessageSquare, Clock, TrendingUp 
+  CheckSquare, MessageSquare, Clock, TrendingUp, LayoutDashboard, FolderKanban, Milestone, Users
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -32,14 +32,114 @@ const chartData = [
 ];
 
 const Landing = () => (
-  <div className="container min-vh-100 d-flex flex-column align-items-center justify-content-center text-center">
-    <h1 className="display-3 fw-bold mb-4">CampusFlow</h1>
-    <p className="lead text-muted mb-5" style={{ maxWidth: '600px' }}>
-      The complete student project management ecosystem. Manage tasks, chat with teams, and track your Viva milestones in one place.
-    </p>
-    <div className="d-flex gap-3">
-      <a href="/login" className="btn btn-primary btn-lg px-5">Get Started</a>
-      <a href="/register" className="btn btn-outline-secondary btn-lg px-5">Create Account</a>
+  <div className="landing-container">
+    <div className="orb-1"></div>
+    <div className="orb-2"></div>
+    <div className="orb-3"></div>
+
+    <div className="container py-5 position-relative" style={{ zIndex: 1 }}>
+      {/* Hero Section */}
+      <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center text-center pb-5">
+        <div className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-4 fw-semibold border border-primary border-opacity-10">
+          ✨ Academic Project Manager
+        </div>
+        <h1 className="display-2 fw-bold mb-4 text-white" style={{ letterSpacing: '-1px' }}>
+          Campus<span className="text-primary">Flow</span>
+        </h1>
+        <p className="lead text-muted mb-5 mx-auto" style={{ maxWidth: '650px', fontSize: '1.2rem', lineHeight: '1.7' }}>
+          The complete student project management ecosystem. Collaborate with team members, coordinate tasks on a Kanban board, share vault resources, and track your Viva milestones in real-time.
+        </p>
+        <div className="d-flex gap-3 justify-content-center">
+          <a href="/login" className="btn btn-primary btn-lg px-5 py-3 shadow-lg">Get Started</a>
+          <a href="/register" className="btn btn-outline-secondary btn-lg px-5 py-3 border-secondary border-opacity-25 hover-bg-dark text-white text-decoration-none">Create Account</a>
+        </div>
+      </div>
+
+      {/* Features Content Grid */}
+      <div className="row g-4 mt-5 pt-5 pb-5">
+        <div className="col-12 text-center mb-5">
+          <h2 className="fw-bold text-white mb-2 fs-1">Everything You Need to Succeed</h2>
+          <p className="text-muted">Collaborate seamlessly from proposal submission to the final Viva defense</p>
+        </div>
+
+        {/* Feature 1 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-primary bg-opacity-10 rounded-4 d-inline-block mb-4 text-primary" style={{ width: 'fit-content' }}>
+              <LayoutDashboard size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Dynamic Dashboard</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Check project sprint analytics, visualize workflow progress with charts, write quick ideas in a persistent scratchpad, and keep countdowns of your next critical deadlines.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 2 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-success bg-opacity-10 rounded-4 d-inline-block mb-4 text-success" style={{ width: 'fit-content' }}>
+              <CheckSquare size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Kanban Task Board</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Drag and drop tasks through stages. Categorize personal study tasks from team responsibilities, and flag tasks with High, Medium, or Low priority indicators.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 3 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-info bg-opacity-10 rounded-4 d-inline-block mb-4 text-info" style={{ width: 'fit-content' }}>
+              <MessageSquare size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Real-time Team Chat</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Dedicated workspaces for each team. Connect with teammates instantly with Socket.io real-time chat, synchronizing ideas and files without delay.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 4 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-warning bg-opacity-10 rounded-4 d-inline-block mb-4 text-warning" style={{ width: 'fit-content' }}>
+              <FolderKanban size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Resource Vault</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Store project assets in a secure, central directory. Upload documents with custom renaming, store shared URLs (like GitHub repositories), and find them instantly via search.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 5 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-danger bg-opacity-10 rounded-4 d-inline-block mb-4 text-danger" style={{ width: 'fit-content' }}>
+              <Milestone size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Viva Milestone Tracker</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Add upcoming viva presentation deadlines, map project phases, and check off milestone targets to ensure your team is fully prepared for examiner evaluations.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 6 */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card-custom p-4 bg-dark bg-opacity-25 border-secondary border-opacity-10 h-100 d-flex flex-column">
+            <div className="p-3 bg-primary bg-opacity-10 rounded-4 d-inline-block mb-4 text-primary" style={{ width: 'fit-content' }}>
+              <TrendingUp size={24} />
+            </div>
+            <h5 className="fw-bold text-white mb-3">Interactive Analytics</h5>
+            <p className="text-muted small mb-0 flex-grow-1">
+              Monitor team progress. View charts representing weekly task completion trends, analyze individual member contribution velocity, and prioritize team workloads.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );

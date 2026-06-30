@@ -40,7 +40,10 @@ const Login = () => {
   };
 
   return (
-    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-5">
+    <div className="auth-container">
+      <div className="orb-1"></div>
+      <div className="orb-2"></div>
+      <div className="orb-3"></div>
       <div className="card-custom p-4 p-md-5" style={{ maxWidth: '480px', width: '100%' }}>
         <div className="text-center mb-5">
           <div className="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 mb-4">

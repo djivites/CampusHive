@@ -172,3 +172,221 @@ $card-border-color: rgba(255, 255, 255, 0.05);
     color: #0f172a !important;
   }
 }
+
+/* Premium Auth Page Backgrounds */
+.auth-container {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 3rem 1rem;
+  background-color: #020617;
+  
+  // Background grid overlay
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: center;
+  
+  // Animated Glowing Orbs
+  .orb-1 {
+    position: absolute;
+    top: -15%;
+    left: -10%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    filter: blur(100px);
+    z-index: 0;
+    pointer-events: none;
+    animation: pulse-slow 12s infinite alternate;
+  }
+  
+  .orb-2 {
+    position: absolute;
+    bottom: -15%;
+    right: -10%;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+    filter: blur(100px);
+    z-index: 0;
+    pointer-events: none;
+    animation: pulse-slow 16s infinite alternate-reverse;
+  }
+  
+  .orb-3 {
+    position: absolute;
+    top: 25%;
+    right: 15%;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
+    filter: blur(90px);
+    z-index: 0;
+    pointer-events: none;
+    animation: floating-orb 22s infinite linear;
+  }
+  
+  .card-custom {
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(15, 23, 42, 0.75); // Translucent slate-900
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+// Light theme support for auth background
+[data-theme="light"] {
+  .auth-container {
+    background-color: #f8fafc;
+    background-image: 
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    
+    .orb-1 {
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+    }
+    
+    .orb-2 {
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+    }
+    
+    .orb-3 {
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.03) 0%, transparent 70%);
+    }
+    
+    .card-custom {
+      background-color: rgba(255, 255, 255, 0.8) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
+    }
+  }
+}
+
+@keyframes pulse-slow {
+  0% {
+    transform: scale(1) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(1.15) translate(40px, -30px);
+  }
+  100% {
+    transform: scale(1) translate(0px, 0px);
+  }
+}
+
+@keyframes floating-orb {
+  0% {
+    transform: rotate(0deg) translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) translate(30px, 40px) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) translate(0px, 0px) scale(1);
+  }
+}
+
+/* Premium Landing Page Background */
+.landing-container {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #020617;
+  overflow-x: hidden;
+  
+  // Background grid overlay
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: center;
+  
+  // Animated Glowing Orbs
+  .orb-1 {
+    position: absolute;
+    top: 5%;
+    left: -15%;
+    width: 650px;
+    height: 650px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+    filter: blur(100px);
+    z-index: 0;
+    pointer-events: none;
+    animation: pulse-slow 14s infinite alternate;
+  }
+  
+  .orb-2 {
+    position: absolute;
+    top: 45%;
+    right: -15%;
+    width: 750px;
+    height: 750px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+    filter: blur(100px);
+    z-index: 0;
+    pointer-events: none;
+    animation: pulse-slow 18s infinite alternate-reverse;
+  }
+  
+  .orb-3 {
+    position: absolute;
+    bottom: 5%;
+    left: 10%;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
+    filter: blur(95px);
+    z-index: 0;
+    pointer-events: none;
+    animation: floating-orb 24s infinite linear;
+  }
+  
+  .card-custom {
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(15, 23, 42, 0.75); // Translucent slate-900
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+// Light theme support for landing page
+[data-theme="light"] {
+  .landing-container {
+    background-color: #f8fafc;
+    background-image: 
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    
+    .orb-1 {
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+    }
+    
+    .orb-2 {
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
+    }
+    
+    .orb-3 {
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.02) 0%, transparent 70%);
+    }
+    
+    .card-custom {
+      background-color: rgba(255, 255, 255, 0.8) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05) !important;
+    }
+  }
+}
