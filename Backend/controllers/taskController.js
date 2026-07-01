@@ -213,7 +213,7 @@ CampusFlow Team`;
               </div>
 
               <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
-                <a href={`${process.env.CLIENT_URL || 'http://localhost:5173'}/tasks`} style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: 700; border-radius: 9999px; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/tasks" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: 700; border-radius: 9999px; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
                   View Task on Dashboard
                 </a>
               </div>
