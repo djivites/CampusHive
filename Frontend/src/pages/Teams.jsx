@@ -186,7 +186,7 @@ const Teams = () => {
               </div>
 
               {/* Content */}
-              <div className="p-4 p-md-5 flex-grow-1">
+              <div className="p-4 p-md-5 flex-grow-1 overflow-auto">
                 {activeTab === 'Overview' && (
                   <>
                     <h5 className="fw-bold mb-4 text-white">Team Members</h5>
