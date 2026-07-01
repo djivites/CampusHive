@@ -64,7 +64,7 @@ const Navbar = () => {
   const handleMarkAllRead = async () => {
     try {
       await API.put('/notifications/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications([]);
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
