@@ -2,35 +2,20 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const File = require('../models/File');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const sanitizedName = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${Date.now()}-${sanitizedName}`);
-  }
-});
-
+// Memory storage for multer so files are kept in RAM buffer before streaming to GridFS
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // @route   POST /api/files/upload
+// @desc    Upload file to MongoDB GridFS
 router.post('/upload', protect, upload.single('file'), async (req, res) => {
   try {
-    console.log('Upload Request Body:', req.body);
-    console.log('Upload Request File:', req.file);
-
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
     // Ensure teamId is valid ObjectId or null
@@ -39,25 +24,74 @@ router.post('/upload', protect, upload.single('file'), async (req, res) => {
       teamId = null;
     }
 
-    console.log('Saving file with teamId:', teamId);
-
-    // Use custom name if provided, otherwise use original name
     const extension = path.extname(req.file.originalname);
     const fileName = req.body.customName ? `${req.body.customName}${extension}` : req.file.originalname;
 
-    const file = await File.create({
-      name: fileName,
-      url: `/uploads/${req.file.filename}`,
-      size: (req.file.size / 1024 / 1024).toFixed(2) + ' MB',
-      type: extension.substring(1).toUpperCase(),
-      user: req.user._id,
-      team: teamId
+    // Create write stream to GridFS
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'fs'
     });
 
-    console.log('File created successfully:', file._id);
-    res.status(201).json(file);
+    const uploadStream = bucket.openUploadStream(fileName, {
+      contentType: req.file.mimetype
+    });
+
+    // Write binary buffer to GridFS
+    uploadStream.end(req.file.buffer);
+
+    uploadStream.on('error', (err) => {
+      console.error('GridFS Upload Error:', err);
+      res.status(500).json({ message: 'Failed to save file to database' });
+    });
+
+    uploadStream.on('finish', async () => {
+      const fileId = uploadStream.id;
+
+      const file = await File.create({
+        name: fileName,
+        url: `/api/files/download/${fileId}`,
+        size: (req.file.size / 1024 / 1024).toFixed(2) + ' MB',
+        type: extension.substring(1).toUpperCase(),
+        user: req.user._id,
+        team: teamId
+      });
+
+      console.log('File uploaded to GridFS and meta saved:', file._id);
+      res.status(201).json(file);
+    });
   } catch (error) {
     console.error('Upload Error Details:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   GET /api/files/download/:id
+// @desc    Download/stream file from GridFS
+router.get('/download/:id', async (req, res) => {
+  try {
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'fs'
+    });
+
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+
+    // Find file details in GridFS files metadata collection
+    const files = await bucket.find({ _id: fileId }).toArray();
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const fileMetadata = files[0];
+    res.set({
+      'Content-Type': fileMetadata.contentType || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileMetadata.filename)}"`
+    });
+
+    // Stream from GridFS to response
+    const downloadStream = bucket.openDownloadStream(fileId);
+    downloadStream.pipe(res);
+  } catch (error) {
+    console.error('Download Error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -74,6 +108,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // @route   DELETE /api/files/:id
+// @desc    Delete file from database and GridFS (or local filesystem for old files)
 router.delete('/:id', protect, async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
@@ -87,18 +122,30 @@ router.delete('/:id', protect, async (req, res) => {
       return res.status(401).json({ message: 'Not authorized' });
     }
 
-    // Delete actual file
-    // file.url starts with /uploads/
-    const relativePath = file.url.startsWith('/') ? file.url.substring(1) : file.url;
-    const filePath = path.join(__dirname, '..', relativePath);
-    
-    console.log(`Attempting to delete file at: ${filePath}`);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log('File deleted from filesystem');
-    } else {
-      console.log('File not found on filesystem, skipping unlink');
+    // Check if it's an old local file or a new GridFS file
+    if (file.url.startsWith('/uploads/')) {
+      // Old file: delete from filesystem
+      const relativePath = file.url.startsWith('/') ? file.url.substring(1) : file.url;
+      const filePath = path.join(__dirname, '..', relativePath);
+      console.log(`Attempting to delete local file at: ${filePath}`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log('File deleted from local filesystem');
+      }
+    } else if (file.url.startsWith('/api/files/download/')) {
+      // New GridFS file: delete from GridFS bucket
+      const parts = file.url.split('/');
+      const fileIdStr = parts[parts.length - 1];
+      
+      try {
+        const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+          bucketName: 'fs'
+        });
+        await bucket.delete(new mongoose.Types.ObjectId(fileIdStr));
+        console.log('File deleted from GridFS');
+      } catch (err) {
+        console.warn('GridFS Delete Warning:', err.message);
+      }
     }
 
     await File.findByIdAndDelete(req.params.id);

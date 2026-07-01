@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import API from '../api/axios';
 
 const Files = () => {
+  const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
   const location = useLocation();
   const [files, setFiles] = useState([]);
   const [links, setLinks] = useState([]);
@@ -230,7 +231,7 @@ const Files = () => {
                     {getFileIcon(file.type)}
                   </div>
                   <div className="d-flex gap-2">
-                    <a href={`http://localhost:5000${file.url}`} target="_blank" rel="noreferrer" className="btn btn-link text-muted p-0 hover-primary"><Download size={18} /></a>
+                    <a href={`${backendUrl}${file.url}`} target="_blank" rel="noreferrer" className="btn btn-link text-muted p-0 hover-primary"><Download size={18} /></a>
                     <button onClick={() => handleDeleteFile(file._id)} className="btn btn-link text-muted p-0 hover-danger"><Trash2 size={18} /></button>
                   </div>
                 </div>

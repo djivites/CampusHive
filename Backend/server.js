@@ -14,6 +14,7 @@ const resourceRoutes = require('./routes/resourceRoutes');
 const noteRoutes = require('./routes/noteRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const Message = require('./models/Message');
 
 // Load environment variables
@@ -31,6 +32,9 @@ const io = new Server(server, {
   }
 });
 
+// Set io globally on the app
+app.set('io', io);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -42,12 +46,40 @@ io.on('connection', (socket) => {
     socket.join(teamId);
   });
 
+  socket.on('join_user', (userId) => {
+    socket.join(`user_${userId}`);
+  });
+
   socket.on('send_message', async (data) => {
     const { team, sender, text } = data;
     try {
       const newMessage = await Message.create({ team, sender, text });
       const populatedMessage = await newMessage.populate('sender', 'name email');
       io.to(team).emit('receive_message', populatedMessage);
+
+      // Create in-app notifications for other team members
+      const Team = require('./models/Team');
+      const User = require('./models/User');
+      const { createAndEmitNotification } = require('./controllers/notificationController');
+
+      const teamObj = await Team.findById(team);
+      if (teamObj) {
+        const senderObj = await User.findById(sender);
+        const senderName = senderObj ? senderObj.name : 'Teammate';
+        
+        for (const memberId of teamObj.members) {
+          if (memberId.toString() !== sender.toString()) {
+            await createAndEmitNotification(io, {
+              recipient: memberId,
+              sender: sender,
+              type: 'NEW_MESSAGE',
+              title: `New Message in ${teamObj.name}`,
+              message: `${senderName}: "${text.length > 50 ? text.substring(0, 47) + '...' : text}"`,
+              team: team
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error);
     }
@@ -64,6 +96,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Chat history route
 app.get('/api/messages/:teamId', async (req, res) => {

@@ -131,6 +131,22 @@ exports.createTask = async (req, res) => {
       .populate('user', 'name')
       .populate('team', 'name');
 
+    // Create & Emit In-App Notification if assigned to someone else
+    if (task.assignedTo && task.assignedTo.toString() !== req.user._id.toString()) {
+      const io = req.app.get('io');
+      const { createAndEmitNotification } = require('./notificationController');
+      const locationName = populatedTask.team?.name ? `in "${populatedTask.team.name}"` : 'on your board';
+      await createAndEmitNotification(io, {
+        recipient: task.assignedTo,
+        sender: req.user._id,
+        type: 'TASK_ASSIGNED',
+        title: 'New Task Assigned',
+        message: `${req.user.name} assigned you: "${task.title}" ${locationName}.`,
+        task: task._id,
+        team: task.team
+      });
+    }
+
     if (populatedTask && populatedTask.assignedTo) {
       const assignee = populatedTask.assignedTo;
       // Default to true if settings or emailNotifications is undefined
@@ -197,7 +213,7 @@ CampusFlow Team`;
               </div>
 
               <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
-                <a href="http://localhost:3000/tasks" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: 700; border-radius: 9999px; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                <a href={`${process.env.CLIENT_URL || 'http://localhost:5173'}/tasks`} style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: 700; border-radius: 9999px; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
                   View Task on Dashboard
                 </a>
               </div>
@@ -237,8 +253,28 @@ exports.updateTaskStatus = async (req, res) => {
       return res.status(401).json({ message: 'User not authorized' });
     }
 
+    const oldStatus = task.status;
     task.status = req.body.status;
     const updatedTask = await task.save();
+
+    // Trigger notification if task was marked Completed
+    if (task.status === 'Completed' && oldStatus !== 'Completed') {
+      const io = req.app.get('io');
+      const { createAndEmitNotification } = require('./notificationController');
+
+      // Notify the task creator (if they are not the one who completed it)
+      if (task.user.toString() !== req.user._id.toString()) {
+        await createAndEmitNotification(io, {
+          recipient: task.user,
+          sender: req.user._id,
+          type: 'TASK_COMPLETED',
+          title: 'Task Completed',
+          message: `${req.user.name} completed your task: "${task.title}".`,
+          task: task._id,
+          team: task.team
+        });
+      }
+    }
 
     res.json(updatedTask);
   } catch (error) {

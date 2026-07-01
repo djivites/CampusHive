@@ -77,7 +77,8 @@ const Settings = () => {
       const { data } = await API.post('/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const newAvatarUrl = `http://localhost:5000${data.url}`;
+      const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+      const newAvatarUrl = `${backendUrl}${data.url}`;
       
       await API.put('/users/profile', { ...profile, avatar: newAvatarUrl });
       setProfile({ ...profile, avatar: newAvatarUrl });

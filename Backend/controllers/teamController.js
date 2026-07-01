@@ -86,6 +86,34 @@ exports.addMember = async (req, res) => {
       .populate('members', 'name email avatar')
       .populate('lead', 'name email');
 
+    // Create & Emit notifications
+    const io = req.app.get('io');
+    const { createAndEmitNotification } = require('./notificationController');
+
+    // Notify the added user
+    await createAndEmitNotification(io, {
+      recipient: userToAdd._id,
+      sender: req.user._id,
+      type: 'TEAM_ADDED',
+      title: 'Added to Workspace',
+      message: `You have been added to the team "${team.name}" by ${req.user.name}.`,
+      team: team._id
+    });
+
+    // Notify other members of the team
+    for (const memberId of team.members) {
+      if (memberId.toString() !== userToAdd._id.toString() && memberId.toString() !== req.user._id.toString()) {
+        await createAndEmitNotification(io, {
+          recipient: memberId,
+          sender: userToAdd._id,
+          type: 'MEMBER_JOINED',
+          title: 'New Member Joined',
+          message: `${userToAdd.name} has joined "${team.name}".`,
+          team: team._id
+        });
+      }
+    }
+
     res.json(populatedTeam);
   } catch (error) {
     res.status(500).json({ message: error.message });
