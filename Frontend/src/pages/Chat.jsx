@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Send, Hash, MessageSquare, Info, Users, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +7,8 @@ import API from '../api/axios';
 
 const Chat = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const targetTeamId = location.state?.teamId;
   const [teams, setTeams] = useState([]);
   const [activeTeam, setActiveTeam] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -34,14 +37,15 @@ const Chat = () => {
         const { data } = await API.get('/teams');
         setTeams(data);
         if (data.length > 0) {
-          setActiveTeam(data[0]);
+          const target = targetTeamId ? data.find(t => t._id === targetTeamId) : null;
+          setActiveTeam(target || data[0]);
         }
       } catch (error) {
         console.error('Error fetching teams:', error);
       }
     };
     fetchTeams();
-  }, []);
+  }, [targetTeamId]);
 
   // Handle team switch
   useEffect(() => {

@@ -7,11 +7,13 @@ import {
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import API from '../api/axios';
 
 const Teams = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const socket = useSocket();
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [activeTab, setActiveTab] = useState('Overview');
@@ -21,6 +23,11 @@ const Teams = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [teamMode, setTeamMode] = useState('Leader');
+  const [teamNote, setTeamNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [loadingNote, setLoadingNote] = useState(false);
+  const [noteLastUpdatedBy, setNoteLastUpdatedBy] = useState(null);
+  const [noteUpdatedAt, setNoteUpdatedAt] = useState(null);
   
   const { register, handleSubmit: handleCreateSubmit, reset: resetCreate } = useForm();
   const { register: registerInvite, handleSubmit: handleInviteSubmit, reset: resetInvite } = useForm();
@@ -37,6 +44,77 @@ const Teams = () => {
       fetchTeamTasks();
     }
   }, [selectedTeam, activeTab]);
+
+  useEffect(() => {
+    if (selectedTeam && activeTab === 'Notes') {
+      fetchTeamNote();
+    }
+  }, [selectedTeam, activeTab]);
+
+  useEffect(() => {
+    if (socket && selectedTeam) {
+      socket.emit('join_team', selectedTeam._id);
+    }
+  }, [socket, selectedTeam]);
+
+  useEffect(() => {
+    if (!socket || !selectedTeam) return;
+
+    const handleNoteUpdated = (data) => {
+      if (data.teamId === selectedTeam._id) {
+        setTeamNote(data.content);
+        setNoteLastUpdatedBy(data.lastUpdatedBy);
+        setNoteUpdatedAt(data.updatedAt || new Date());
+      }
+    };
+
+    socket.on('note_updated', handleNoteUpdated);
+
+    return () => {
+      socket.off('note_updated', handleNoteUpdated);
+    };
+  }, [socket, selectedTeam]);
+
+  const fetchTeamNote = async () => {
+    if (!selectedTeam) return;
+    setLoadingNote(true);
+    try {
+      const { data } = await API.get(`/notes/team/${selectedTeam._id}`);
+      setTeamNote(data.content);
+      setNoteLastUpdatedBy(data.lastUpdatedBy);
+      setNoteUpdatedAt(data.updatedAt);
+    } catch (error) {
+      console.error('Error fetching team note:', error);
+    } finally {
+      setLoadingNote(false);
+    }
+  };
+
+  const handleSaveTeamNote = async () => {
+    if (!selectedTeam) return;
+    setSavingNote(true);
+    try {
+      const { data } = await API.post(`/notes/team/${selectedTeam._id}`, { content: teamNote });
+      setNoteLastUpdatedBy(data.lastUpdatedBy);
+      setNoteUpdatedAt(data.updatedAt);
+      alert('Team note saved successfully!');
+    } catch (error) {
+      console.error('Error saving team note:', error);
+      alert('Error saving team note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleTabClick = (tab) => {
+    if (tab === 'Chat') {
+      navigate('/chat', { state: { teamId: selectedTeam._id } });
+    } else if (tab === 'Files') {
+      navigate('/files', { state: { teamId: selectedTeam._id } });
+    } else {
+      setActiveTab(tab);
+    }
+  };
 
   const fetchTeams = async (targetTeamId = null) => {
     try {
@@ -180,7 +258,7 @@ const Teams = () => {
                 </div>
                 <div className="d-flex gap-4 mt-5">
                   {tabs.map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`btn btn-link text-decoration-none px-4 py-2 rounded-pill small fw-bold transition-all ${activeTab === tab ? 'bg-primary text-white shadow-sm' : 'text-muted hover-text-white'}`}>{tab}</button>
+                    <button key={tab} onClick={() => handleTabClick(tab)} className={`btn btn-link text-decoration-none px-4 py-2 rounded-pill small fw-bold transition-all ${activeTab === tab ? 'bg-primary text-white shadow-sm' : 'text-muted hover-text-white'}`}>{tab}</button>
                   ))}
                 </div>
               </div>
@@ -248,8 +326,47 @@ const Teams = () => {
                   </div>
                 )}
 
-                {activeTab !== 'Overview' && activeTab !== 'Tasks' && (
+                {activeTab !== 'Overview' && activeTab !== 'Tasks' && activeTab !== 'Notes' && (
                   <div className="text-center py-5"><div className="bg-dark bg-opacity-25 p-5 rounded-circle d-inline-block mb-4">{getTabIcon(activeTab)}</div><h5 className="fw-bold text-white">Team {activeTab}</h5><p className="text-muted small mx-auto" style={{ maxWidth: '300px' }}>Synchronized with the main {activeTab} module.</p></div>
+                )}
+
+                {activeTab === 'Notes' && (
+                  <div className="h-100 d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                      <div>
+                        <h5 className="fw-bold mb-1 text-white">Shared Team Notes</h5>
+                        <p className="text-muted small mb-0">Collaborate with your team in real-time. Any changes will be synchronized instantly.</p>
+                      </div>
+                      {noteLastUpdatedBy && (
+                        <div className="text-muted extra-small text-end">
+                          Last updated by <span className="text-white">{noteLastUpdatedBy.name || (typeof noteLastUpdatedBy === 'string' ? noteLastUpdatedBy : 'Unknown')}</span>
+                          {noteUpdatedAt && ` at ${new Date(noteUpdatedAt).toLocaleTimeString()}`}
+                        </div>
+                      )}
+                    </div>
+                    {loadingNote ? (
+                      <div className="text-center py-5 text-muted">Loading note content...</div>
+                    ) : (
+                      <div className="flex-grow-1 d-flex flex-column bg-dark bg-opacity-25 p-4 rounded-4 border border-secondary border-opacity-10">
+                        <textarea
+                          className="form-control bg-transparent border-0 text-white shadow-none p-0 flex-grow-1"
+                          placeholder="Type team notes, sharing ideas, snippets, meeting minutes..."
+                          style={{ resize: 'none', fontSize: '15px', minHeight: '300px', outline: 'none' }}
+                          value={teamNote}
+                          onChange={(e) => setTeamNote(e.target.value)}
+                        />
+                        <div className="d-flex justify-content-end gap-2 mt-3 pt-3 border-top border-secondary border-opacity-10">
+                          <button
+                            onClick={handleSaveTeamNote}
+                            disabled={savingNote}
+                            className="btn btn-primary rounded-pill px-5 py-2 fw-bold d-flex align-items-center gap-2"
+                          >
+                            {savingNote ? 'Saving...' : 'Save Note'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
